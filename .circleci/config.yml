@@ -1,0 +1,36 @@
+version: 2.1
+
+jobs:
+  ofetch:
+    docker:
+      - image: cimg/node:24.21
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - pnpm-v1-node24-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+      - run:
+          name: Install dependencies
+          command: |
+            npm install --prefix "$HOME/.local" --no-package-lock pnpm@10.20.0
+            export PATH="$HOME/.local/node_modules/.bin:$PATH"
+            echo 'export PATH="$HOME/.local/node_modules/.bin:$PATH"' >> "$BASH_ENV"
+            pnpm install --frozen-lockfile --store-dir .pnpm-store
+      - save_cache:
+          key: pnpm-v1-node24-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - .pnpm-store
+      - run:
+          name: Build
+          command: pnpm build
+      - run:
+          name: Test
+          command: pnpm test
+      - run:
+          name: Lint
+          command: pnpm lint
+
+workflows:
+  ci:
+    jobs:
+      - ofetch
