@@ -1,0 +1,34 @@
+version: 2.1
+
+jobs:
+  ofetch:
+    docker:
+      - image: cimg/node:24.21
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "pnpm-lock.yaml" }}
+      - run:
+          name: Install dependencies
+          command: |
+            corepack enable
+            pnpm install
+      - save_cache:
+          key: v1-deps-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.local/share/pnpm/store
+      - run:
+          name: Build
+          command: pnpm build
+      - run:
+          name: Test
+          command: pnpm vitest run --coverage
+      - run:
+          name: Lint
+          command: pnpm lint
+
+workflows:
+  main:
+    jobs:
+      - ofetch
