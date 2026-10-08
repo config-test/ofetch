@@ -1,0 +1,41 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/node:24.9
+    steps:
+      - checkout
+
+      - run:
+          name: Enable corepack (activates pnpm from package.json)
+          command: |
+            sudo corepack enable
+            corepack install
+
+      - run:
+          name: Set pnpm store path
+          command: pnpm config set store-dir ~/.pnpm-store --global
+
+      - restore_cache:
+          keys:
+            - pnpm-v1-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-v1-
+
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile
+
+      - save_cache:
+          key: pnpm-v1-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+
+      - run:
+          name: Run tests
+          command: pnpm vitest run --coverage
+
+workflows:
+  ci:
+    jobs:
+      - test
