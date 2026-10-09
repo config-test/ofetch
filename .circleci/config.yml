@@ -1,0 +1,35 @@
+version: 2.1
+
+jobs:
+  ofetch:
+    docker:
+      # Node 24 is the newest runtime tested by the existing CI.
+      - image: cimg/node:24.12
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-pnpm-node24-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+      - run:
+          name: Install dependencies
+          command: |
+            corepack enable
+            pnpm install --frozen-lockfile --store-dir .pnpm-store
+      - save_cache:
+          key: v1-pnpm-node24-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - .pnpm-store
+      - run:
+          name: Build
+          command: pnpm build
+      - run:
+          name: Test
+          command: pnpm test
+      - run:
+          name: Lint
+          command: pnpm lint
+
+workflows:
+  ci:
+    jobs:
+      - ofetch
